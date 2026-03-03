@@ -28,7 +28,7 @@ class ModelManager:
     def load(self):
         """Load both models onto the device."""
         print(f"Loading MegaDetector V6 Compact on {self.device}...")
-        self.detector = pw_detection.MegaDetectorV6(device=self.device, pretrained=True, version="yolov10c")
+        self.detector = pw_detection.MegaDetectorV6(device=self.device, pretrained=True, version="MDV6-yolov10-c")
         print("MegaDetector loaded.")
 
         print(f"Loading YOLOv8n-cls from {self.cls_weights} on {self.device}...")
@@ -122,7 +122,7 @@ class ModelManager:
             return {
                 "gpu_available": True,
                 "gpu_name": torch.cuda.get_device_name(0),
-                "gpu_memory_total_mb": round(torch.cuda.get_device_properties(0).total_mem / 1e6, 1),
+                "gpu_memory_total_mb": round(torch.cuda.get_device_properties(0).total_memory / 1e6, 1),
                 "gpu_memory_allocated_mb": round(torch.cuda.memory_allocated(0) / 1e6, 1),
             }
         return {"gpu_available": False}
