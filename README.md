@@ -4,6 +4,30 @@ Dockerized FastAPI service running two wildlife vision models on a Jetson Orin N
 - **MegaDetector V6 Compact** (yolov10-c) — animal/person/vehicle detection at 1280px
 - **YOLOv8n-cls** (lynx individual ID) — 77-class classification at 224px
 
+## Quick Start (freshly flashed JetPack 6.x)
+
+If your Orin Nano already has JetPack 6.x flashed and booted, run:
+
+```bash
+# Install Docker + NVIDIA runtime
+git clone https://github.com/jetsonhacks/install-docker.git
+cd install-docker
+bash ./install_nvidia_docker.sh
+bash ./configure_nvidia_docker.sh
+logout  # log back in for docker group to take effect
+
+# Clone and run
+git clone https://github.com/ui-insight/wildmarker-ai.git
+cd wildmarker-ai
+docker compose build
+docker compose up -d
+
+# Verify (wait ~45s for models to load)
+curl http://localhost:8000/health
+```
+
+See the detailed steps below if you need to flash JetPack from scratch.
+
 ## Hardware Requirements
 
 - NVIDIA Jetson Orin Nano Developer Kit (8GB)
@@ -98,7 +122,7 @@ This should print `True`.
 ## Step 4: Clone and Deploy
 
 ```bash
-git clone <repo-url> wildmarker-ai
+git clone https://github.com/ui-insight/wildmarker-ai.git
 cd wildmarker-ai
 ```
 
@@ -122,7 +146,7 @@ docker compose build
 docker compose up -d
 ```
 
-The first build pulls the `nvcr.io/nvidia/l4t-pytorch:r36.4.0-pth2.5-py3` base image (~8GB) and installs Python dependencies. This takes a while on the first run.
+The first build pulls the `dustynv/l4t-pytorch:r36.4.0` base image (~8GB) and installs Python dependencies. This takes a while on the first run.
 
 MegaDetector weights are automatically downloaded on first startup and cached in a Docker volume (`model-cache`) so subsequent starts are fast.
 
@@ -224,7 +248,7 @@ cat /etc/docker/daemon.json
 
 ## Architecture
 
-- **Base image:** `nvcr.io/nvidia/l4t-pytorch:r36.4.0-pth2.5-py3` (PyTorch 2.5 + CUDA 12.6 pre-installed)
+- **Base image:** `dustynv/l4t-pytorch:r36.4.0` (PyTorch 2.4 + CUDA 12.6 pre-installed)
 - MegaDetector weights auto-download on first run and are cached in a Docker volume (`model-cache`)
 - `best.pt` (lynx classifier) is copied into the container at build time
 - Per-image error handling: a corrupt file won't fail the entire request
