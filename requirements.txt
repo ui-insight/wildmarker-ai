@@ -1,0 +1,8 @@
+ultralytics>=8.1.0
+PytorchWildlife>=1.1.0
+lightning>=2.2.0
+omegaconf>=2.3.0
+fastapi>=0.110.0
+uvicorn[standard]>=0.29.0
+python-multipart>=0.0.9
+Pillow>=10.0.0
