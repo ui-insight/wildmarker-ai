@@ -116,18 +116,26 @@ class ModelManager:
     def process_image(self, image: Image.Image, filename: str) -> dict:
         try:
             detections = self.detect(image)
-            classification = self.classify(image)
+            w, h = image.size
+            for det in detections:
+                if det["class"] != "animal":
+                    continue
+                x1, y1, x2, y2 = det["bbox"]
+                x1 = max(0, min(int(x1), w - 1))
+                y1 = max(0, min(int(y1), h - 1))
+                x2 = max(x1 + 1, min(int(x2), w))
+                y2 = max(y1 + 1, min(int(y2), h))
+                crop = image.crop((x1, y1, x2, y2))
+                det["classification"] = self.classify(crop)
             return {
                 "filename": filename,
                 "detections": detections,
-                "classifications": [classification],
                 "error": None,
             }
         except Exception as e:
             return {
                 "filename": filename,
                 "detections": [],
-                "classifications": [],
                 "error": str(e),
             }
 

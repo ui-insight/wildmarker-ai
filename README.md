@@ -197,16 +197,18 @@ curl -X POST http://localhost:8000/predict \
     {
       "filename": "image1.jpg",
       "detections": [
-        {"class": "animal", "confidence": 0.94, "bbox": [100.0, 200.0, 500.0, 600.0]}
-      ],
-      "classifications": [
         {
-          "top1_class": "GSqurriel",
-          "top1_confidence": 0.87,
-          "top5": [
-            {"class": "GSqurriel", "confidence": 0.87},
-            {"class": "Chipmunk", "confidence": 0.08}
-          ]
+          "class": "animal",
+          "confidence": 0.94,
+          "bbox": [100.0, 200.0, 500.0, 600.0],
+          "classification": {
+            "top1_class": "GSqurriel",
+            "top1_confidence": 0.87,
+            "top5": [
+              {"class": "GSqurriel", "confidence": 0.87},
+              {"class": "Chipmunk", "confidence": 0.08}
+            ]
+          }
         }
       ],
       "error": null
@@ -251,7 +253,7 @@ cat /etc/docker/daemon.json
 
 - **Base image:** `dustynv/l4t-pytorch:r36.4.0` (PyTorch 2.4 + CUDA 12.6 pre-installed)
 - **Detection:** MegaDetector V5a (YOLOv5x) loaded via PytorchWildlife, weights auto-downloaded on first run and cached in a Docker volume (`model-cache`). Input fixed at 960×960, FP16 inference.
-- **Classification:** DINOv3 ViT-S/16 as a TorchScript-traced graph (`weights/dinov3_scripted.pt`, ~83 MB), copied into the container at build time. Input 256×256, FP16 inference.
+- **Classification:** DINOv3 ViT-S/16 as a TorchScript-traced graph (`weights/dinov3_scripted.pt`, ~83 MB), copied into the container at build time. Input 256×256, FP16 inference. The classifier runs on the **bbox crop** of each `class=animal` detection; `person` and `vehicle` detections are returned without a classification.
 - Per-image error handling: a corrupt file won't fail the entire request
 - The container runs with GPU access via `nvidia-container-runtime`
 
