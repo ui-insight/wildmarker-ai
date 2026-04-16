@@ -7,7 +7,7 @@ from fastapi import FastAPI, File, UploadFile, HTTPException
 from PIL import Image
 import io
 
-from models import ModelManager, DETECTION_IMGSZ, CLASSIFICATION_IMGSZ
+from wm_models import ModelManager, DINOV3_IMG_SIZE, DINOV3_CLASSES
 
 
 manager = ModelManager()
@@ -21,7 +21,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Wildmarker Detection + Classification Service",
-    description="MegaDetector V6 Compact + YOLOv8n-cls lynx individual ID",
+    description="MegaDetector V6 Compact + DINOv3 ViT-S/16 rodent classifier",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -33,8 +33,9 @@ async def health():
     return {
         "status": "ok" if manager.is_loaded else "loading",
         "models": {
-            "detection": "MegaDetectorV6-compact (yolov10-c)",
-            "classification": "YOLOv8n-cls (lynx, best.pt)",
+            "detection": "MegaDetectorV5a (yolov5x)",
+            "classification": "DINOv3 ViT-S/16 (rodent)",
+            "classification_classes": DINOV3_CLASSES,
         },
         "gpu": manager.gpu_info(),
     }
@@ -73,10 +74,9 @@ async def predict(files: list[UploadFile] = File(...)):
     return {
         "results": results,
         "metadata": {
-            "detection_model": "MegaDetectorV6-compact (yolov10-c)",
-            "classification_model": "YOLOv8n-cls (lynx, best.pt)",
-            "detection_imgsz": DETECTION_IMGSZ,
-            "classification_imgsz": CLASSIFICATION_IMGSZ,
+            "detection_model": "MegaDetectorV5a (yolov5x)",
+            "classification_model": "DINOv3 ViT-S/16 (rodent)",
+            "classification_imgsz": DINOV3_IMG_SIZE,
             "device": manager.device,
             "processing_time_ms": elapsed_ms,
         },

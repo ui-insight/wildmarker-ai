@@ -10,10 +10,10 @@ RUN pip freeze | grep -iE '^(torch|torchvision|torchaudio|numpy)==' > /tmp/const
     -r requirements.txt
 
 # Copy application code
-COPY app.py models.py ./
+COPY app.py wm_models.py ./
 
-# Copy lynx classifier weights
-COPY weights/best.pt /app/best.pt
+# Copy DINOv3 ViT-S/16 classifier weights (TorchScript)
+COPY weights/dinov3_scripted.pt /app/dinov3_scripted.pt
 
 EXPOSE 8000
 

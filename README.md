@@ -1,8 +1,10 @@
 # Wildmarker AI
 
 Dockerized FastAPI service running two wildlife vision models on a Jetson Orin Nano:
-- **MegaDetector V6 Compact** (yolov10-c) — animal/person/vehicle detection at 1280px
-- **YOLOv8n-cls** (lynx individual ID) — 77-class classification at 224px
+- **MegaDetector V5a** (YOLOv5x, 140M params) — animal/person/vehicle detection at 960px, FP16
+- **DINOv3 ViT-S/16** — 5-class rodent classifier (`Back_or_Side`, `Chipmunk`, `GSqurriel`, `Mouse`, `Reject`) at 256px, FP16
+
+Measured throughput on an Orin Nano Super devkit at 15W: **3.43 img/s** end-to-end (detection + classification), with the GPU saturated. Bump to 25W mode for ~4.2 img/s.
 
 ## Quick Start (freshly flashed JetPack 6.x)
 
@@ -126,14 +128,14 @@ git clone https://github.com/ui-insight/wildmarker-ai.git
 cd wildmarker-ai
 ```
 
-Ensure the lynx classifier weights are in place:
+The DINOv3 classifier weights (`weights/dinov3_scripted.pt`, ~83 MB, TorchScript) are committed to the repo. The MegaDetector V5a weights are auto-downloaded on first startup and cached in a Docker volume.
 
 ```
 wildmarker-ai/
   weights/
-    best.pt        <-- YOLOv8n-cls lynx individual ID weights
+    dinov3_scripted.pt   <-- DINOv3 ViT-S/16 rodent classifier
   app.py
-  models.py
+  wm_models.py
   Dockerfile
   docker-compose.yml
   ...
@@ -199,11 +201,11 @@ curl -X POST http://localhost:8000/predict \
       ],
       "classifications": [
         {
-          "top1_class": "LynxID2025_lynx_05",
+          "top1_class": "GSqurriel",
           "top1_confidence": 0.87,
           "top5": [
-            {"class": "LynxID2025_lynx_05", "confidence": 0.87},
-            {"class": "LynxID2025_lynx_12", "confidence": 0.05}
+            {"class": "GSqurriel", "confidence": 0.87},
+            {"class": "Chipmunk", "confidence": 0.08}
           ]
         }
       ],
@@ -211,10 +213,9 @@ curl -X POST http://localhost:8000/predict \
     }
   ],
   "metadata": {
-    "detection_model": "MegaDetectorV6-compact (yolov10-c)",
-    "classification_model": "YOLOv8n-cls (lynx, best.pt)",
-    "detection_imgsz": 1280,
-    "classification_imgsz": 224,
+    "detection_model": "MegaDetectorV5a (yolov5x)",
+    "classification_model": "DINOv3 ViT-S/16 (rodent)",
+    "classification_imgsz": 256,
     "device": "cuda:0",
     "processing_time_ms": 450.2
   }
@@ -249,7 +250,12 @@ cat /etc/docker/daemon.json
 ## Architecture
 
 - **Base image:** `dustynv/l4t-pytorch:r36.4.0` (PyTorch 2.4 + CUDA 12.6 pre-installed)
-- MegaDetector weights auto-download on first run and are cached in a Docker volume (`model-cache`)
-- `best.pt` (lynx classifier) is copied into the container at build time
+- **Detection:** MegaDetector V5a (YOLOv5x) loaded via PytorchWildlife, weights auto-downloaded on first run and cached in a Docker volume (`model-cache`). Input fixed at 960×960, FP16 inference.
+- **Classification:** DINOv3 ViT-S/16 as a TorchScript-traced graph (`weights/dinov3_scripted.pt`, ~83 MB), copied into the container at build time. Input 256×256, FP16 inference.
 - Per-image error handling: a corrupt file won't fail the entire request
 - The container runs with GPU access via `nvidia-container-runtime`
+
+### Performance notes
+
+- Paired top+front camera requests (two images per POST) at client concurrency 2 saturate the GPU and deliver **3.43 img/s at 15W** / **4.19 img/s at 25W** on the Orin Nano Super devkit.
+- The GPU is the bottleneck (p50 99% util); faster throughput at the same resolution requires TensorRT export rather than a power-mode change.
